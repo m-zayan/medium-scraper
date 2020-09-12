@@ -1,7 +1,10 @@
 ## Dependencies
 ------------
 
-`pip install selenium`
+```bash
+pip install selenium
+pip install pandas
+```
 
 ### Linux
 
