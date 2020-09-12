@@ -35,7 +35,7 @@ sudo chmod +x /usr/bin/chromedriver
 sudo apt-get update
 
 wget https://github.com/mozilla/geckodriver/releases/download/v0.27.0/geckodriver-v0.27.0-linux64.tar.gz
-tar -xzf geckodriver-v0.26.0-linux64.tar.gz -C drivers/
+tar -xzf geckodriver-v0.27.0-linux64.tar.gz -C drivers/
 ```
 
 -----------
