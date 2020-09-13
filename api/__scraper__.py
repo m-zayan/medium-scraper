@@ -1,6 +1,7 @@
-from typing import Union
+from typing import Union, List
 
 from selenium import webdriver
+from selenium.webdriver.remote.webelement import WebElement
 
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
@@ -83,6 +84,8 @@ class MediumScraper:
         self.topics_urls: list
         self.start_urls: dict
 
+        self.posts_content: dict
+
         self.options: Union[ChromeOptions, FirefoxOptions]
 
         self.scroll_height = None
@@ -108,11 +111,15 @@ class MediumScraper:
 
                 self.quit()
 
-    def run(self, set_quit=True):
+    def run(self, scrape_content=False, set_quit=True):
 
         try:
 
             self.__get_posts_metadata__()
+
+            if scrape_content:
+
+                self.__get_data__()
 
         except (WebDriverException, ScraperException) as error:
 
@@ -129,7 +136,7 @@ class MediumScraper:
 
                 self.quit()
 
-    def export_posts_urls_json(self, filename='posts_urls.json', overwrite=False, indent_level=3, sort_keys=False):
+    def export_metadata_json(self, filename='posts_urls.json', overwrite=False, indent_level=3, sort_keys=False):
 
         if self.start_urls is not None:
 
@@ -138,47 +145,74 @@ class MediumScraper:
 
         else:
 
-            error_log = {'error_type': 'ValueError', 'message': 'Not urls to export'}
+            error_log = {'error_type': 'ValueError', 'message': 'No urls to export'}
 
             Logger.write_messages_json(error_log)
 
             # Log Error
             Logger.error('Export failed, Check log file')
 
-    def export_posts_urls_csv(self, filename='posts_urls.csv', overwrite=False):
+    def export_metadata_csv(self, filename='posts_urls.csv', overwrite=False):
 
-        keys = list(self.start_urls.keys())
+        if self.start_urls is not None:
 
-        metadata = {key: [] for key in self.start_urls[keys[0]].keys()}
-        metadata.setdefault('topic', [])
+            keys = list(self.start_urls.keys())
 
-        for topic in self.start_urls.keys():
+            metadata = {key: [] for key in self.start_urls[keys[0]].keys()}
+            metadata.setdefault('topic', [])
 
-            topic_name = [topic] * len(self.start_urls[topic]['url'])
+            for topic in self.start_urls.keys():
 
-            metadata['topic'] += topic_name
+                topic_name = [topic] * len(self.start_urls[topic]['url'])
 
-            for key in self.start_urls[topic].keys():
+                metadata['topic'] += topic_name
 
-                values = self.start_urls[topic][key]
-                metadata[key] += values
+                for key in self.start_urls[topic].keys():
 
-        Writer.dict_to_csv(csv_filename=filename, content=metadata, overwrite=overwrite, use_pandas=True)
+                    values = self.start_urls[topic][key]
+                    metadata[key] += values
 
-    def start_requests(self):
+            Writer.dict_to_csv(csv_filename=filename, content=metadata, overwrite=overwrite, use_pandas=True)
 
-        if self.start_urls is None:
+        else:
 
-            error_log = {'error_type': 'ValueError', 'message': 'Not urls to iterate through'}
+            error_log = {'error_type': 'ValueError', 'message': 'No urls to export'}
+
             Logger.write_messages_json(error_log)
 
             # Log Error
-            Logger.error(initialization_error_msg)
+            Logger.error('Export failed, Check log file')
 
-            return None
+    def export_data_json(self, filename='posts_content.json', overwrite=False, indent_level=3, sort_keys=False):
 
-        for _ in self.start_urls.keys():
-            pass
+        if self.posts_content is not None:
+
+            Writer.dict_to_json(json_filename=filename, content=self.posts_content,
+                                overwrite=overwrite,  indent_level=indent_level, sort_keys=sort_keys)
+
+        else:
+
+            error_log = {'error_type': 'ValueError', 'message': 'No data to export'}
+
+            Logger.write_messages_json(error_log)
+
+            # Log Error
+            Logger.error('Export failed, Check log file')
+
+    def export_data_csv(self, filename='posts_content.csv', overwrite=False):
+
+        if self.posts_content is not None:
+
+            Writer.dict_to_csv(csv_filename=filename, content=self.posts_content, overwrite=overwrite, use_pandas=True)
+
+        else:
+
+            error_log = {'error_type': 'ValueError', 'message': 'No data to export'}
+
+            Logger.write_messages_json(error_log)
+
+            # Log Error
+            Logger.error('Export failed, Check log file')
 
     def get(self, url):
 
@@ -202,12 +236,14 @@ class MediumScraper:
 
             except TimeoutException as error:
 
-                Logger.fail(str(i+1) + ': timeout::page has been reloaded')
-                Logger.set_line(length=60)
+                if i < self.reload_page_count - 1:
 
-                if i == self.reload_page_count - 1:
+                    Logger.fail(str(i+1) + ': timeout::page has been reloaded')
+                    Logger.set_line(length=60)
 
-                    Logger.warning(error)
+                else:
+
+                    Logger.error(error)
 
         self.scroll_height = self.driver.execute_script("return document.body.scrollHeight")
 
@@ -229,6 +265,84 @@ class MediumScraper:
 
         return outputs
 
+    def find_elements_by_xpath(self, xpath, raise_error=True):
+
+        try:
+
+            return self.driver.find_elements_by_xpath(xpath)
+
+        except WebDriverException as error:
+
+            if raise_error:
+
+                raise error
+
+            else:
+                return []
+
+    def find_element_by_xpath(self, xpath, raise_error=True):
+
+        try:
+
+            return self.driver.find_element_by_xpath(xpath)
+
+        except WebDriverException as error:
+
+            if raise_error:
+
+                raise error
+
+            else:
+
+                return None
+
+    @staticmethod
+    def node_find_element_by_xpath(node, xpath, raise_error=True):
+
+        if node is None:
+
+            return None
+
+        try:
+
+            return node.find_element_by_xpath(xpath)
+
+        except WebDriverException as error:
+
+            if raise_error:
+
+                raise error
+
+            else:
+
+                return None
+
+    @staticmethod
+    def node_find_elements_by_xpath(node, xpath, raise_error=True):
+
+        if node is None:
+
+            return []
+
+        try:
+
+            return node.find_elements_by_xpath(xpath)
+
+        except WebDriverException as error:
+
+            if raise_error:
+
+                raise error
+
+            else:
+
+                return None
+
+    @staticmethod
+    def safe_get_attribute(element, attr_name, default):
+
+        return getattr(element, attr_name, default)
+
     def quit(self):
 
         self.driver.quit()
@@ -236,6 +350,14 @@ class MediumScraper:
     def close(self):
 
         self.driver.close()
+
+    def get_post_content(self, url):
+
+        if not hasattr(self, 'posts_content'):
+
+            setattr(self, 'posts_content', dict())
+
+        self.__get_post_content__(url)
 
     def get_posts_count(self):
 
@@ -342,7 +464,7 @@ class MediumScraper:
 
         topic_xpath = '//section/div/div/div/a'
 
-        elements = self.driver.find_elements_by_xpath(xpath=topic_xpath)
+        elements = self.find_elements_by_xpath(xpath=topic_xpath)
 
         self.topics_urls = list()
         self.start_urls = dict()
@@ -382,8 +504,8 @@ class MediumScraper:
 
         def get_metadata():
 
-            elements_url = self.driver.find_elements_by_xpath(xpath=article_xpath)
-            elements_date = self.driver.find_elements_by_xpath(xpath=datetime_xpath)
+            elements_url = self.find_elements_by_xpath(xpath=article_xpath)
+            elements_date = self.find_elements_by_xpath(xpath=datetime_xpath)
 
             titles = list(map(lambda node: node.text, elements_url))
             _urls = list(map(lambda node: node.get_attribute('href'), elements_url))
@@ -403,19 +525,153 @@ class MediumScraper:
 
         return metadata
 
-    def __get_taps_urls__(self):
-        pass
+    def __get_data__(self):
 
-    @staticmethod
-    def __exec_ignore__(func):
+        if self.start_urls is None:
 
-        def inner(*args, **kwargs):
+            error_log = {'error_type': 'ValueError', 'message': 'Not urls to iterate through'}
+            Logger.write_messages_json(error_log)
+
+            # Log Error
+            Logger.error(initialization_error_msg)
+
+            return None
+
+        self.posts_content = dict()
+
+        for topic, metadata in self.start_urls.items():
+
+            for url in metadata['url']:
+
+                self.__get_post_content__(url=url)
+
+    def __get_post_content__(self, url):
+
+        self.get(url)
+
+        subtitle_xpath = '//article/div/section/div/div/h2'
+        author_xpath = '//div/div/span/div/span/a'
+        text_xpath = '//article/div/section/div/div/p'
+        figure_xpath = '//article/div/section/div/div/figure'
+        image_xpath = '//div/img'
+        caption_xpath = '//figcaption'
+
+        def section_reformat(text):
+            return '[' + text + ']'
+
+        def child_reformat(text):
+
+            return '<' + text + '>'
+
+        def get_caption(node: WebElement):
+
+            caption = ''
+
+            children = node.find_elements_by_xpath('child::*')
+
+            for child in children:
+
+                txt = MediumScraper.safe_get_attribute(child, 'text', '')
+                caption += child_reformat(txt)
+
+            return caption
+
+        def get_text(p_nodes: List[WebElement]):
+
+            text = ''
+
+            for node in p_nodes:
+
+                txt = MediumScraper.safe_get_attribute(node, 'text', '')
+                text += section_reformat(txt)
+
+                children = node.find_elements_by_xpath('child::*')
+
+                for child in children:
+
+                    txt = MediumScraper.safe_get_attribute(child, 'text', '')
+                    text += child_reformat(txt)
+
+            return text
+
+        def get_post_content():
+
+            ok = None
 
             try:
 
-                func(*args, **kwargs)
+                ok = self.driver.find_elements_by_xpath("//*[contains(text(), '???????????')]")
 
-            except (WebDriverException, ScraperException):
+            except WebDriverException:
+
                 pass
 
-        return inner
+            if ok is not None:
+
+                Logger.warning('You have a limited access')
+
+                invalid = input('\tDo you want to continue - [y/n]: ')
+
+                if invalid.lower() == 'n':
+
+                    return
+
+                elif invalid.lower() != 'y':
+
+                    Logger.fail('Abort')
+
+                    return
+
+            element_subtitle = self.find_element_by_xpath(xpath=subtitle_xpath, raise_error=False)
+            element_author = self.find_element_by_xpath(xpath=author_xpath, raise_error=False)
+
+            elements_text = self.find_elements_by_xpath(xpath=text_xpath, raise_error=False)
+            elements_figure = self.find_elements_by_xpath(xpath=figure_xpath, raise_error=False)
+
+            elements_img = list(map(lambda node:
+                                    MediumScraper.node_find_element_by_xpath(node=node,
+                                                                             xpath=image_xpath,
+                                                                             raise_error=False), elements_figure))
+
+            elements_caption = self.find_elements_by_xpath(xpath=caption_xpath, raise_error=False)
+
+            subtitle = MediumScraper.safe_get_attribute(element_subtitle, 'text', '')
+            author = MediumScraper.safe_get_attribute(element_author, 'text', '')
+
+            text = get_text(elements_text)
+
+            img_url = None
+            img_caption = None
+
+            if len(elements_img):
+
+                img_url = tuple(map(lambda node: node.get_attribute('src'), elements_img))
+
+            if len(elements_caption):
+
+                img_caption = tuple(map(lambda node: get_caption(node), elements_caption))
+
+            keys = list(self.posts_content.keys())
+
+            if len(keys) == 0:
+
+                self.posts_content = {'url': [],
+                                      'subtitle': [],
+                                      'author': [],
+                                      'text':  [],
+                                      'img_url': [],
+                                      'caption': []}
+
+            self.posts_content['url'].append(url)
+            self.posts_content['subtitle'].append(subtitle)
+            self.posts_content['author'].append(author)
+            self.posts_content['text'].append(text)
+            self.posts_content['img_url'].append(img_url)
+            self.posts_content['caption'].append(img_caption)
+
+        self.scroll_down(callback=get_post_content,
+                         delay=0.5,
+                         limit=-1)
+
+    def __get_taps_urls__(self):
+        pass

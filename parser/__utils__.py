@@ -164,17 +164,27 @@ class Writer:
     @staticmethod
     def dict_to_json(json_filename, content, overwrite=False, indent_level=3, sort_keys=False, separators=(',', ':')):
 
-        if OS.file_exists(json_filename) and not overwrite:
-
-            Logger.warning(f'File: {json_filename} Already Exists')
-
-            return None
-
         if not OS.file_exists(json_filename) and overwrite:
 
             Logger.error(f'overwrite=True, File: {json_filename} is Not Exists')
 
             return None
+
+        if OS.file_exists(json_filename) and not overwrite:
+
+            Logger.warning(f'File: {json_filename} Already Exists')
+
+            ok = input('Do you want to continue - [y/n]: ')
+
+            if ok.lower() == 'n':
+
+                return None
+
+            elif ok.lower() != 'y':
+
+                Logger.error(f'Abort')
+
+                return None
 
         if not overwrite:
 
@@ -207,7 +217,7 @@ class Writer:
 
             Logger.warning(f'File: {csv_filename} Already Exists')
 
-            ok = input('Do you want to continue: [y/n]')
+            ok = input('Do you want to continue - [y/n]: ')
 
             if ok.lower() == 'n':
 
@@ -268,7 +278,7 @@ class Requests:
 
         time.sleep(secs)
 
-
+        
 class Formatter:
 
     BLUE = '\033[94m'

@@ -1,10 +1,7 @@
 ## Dependencies
 ------------
 
-```bash
-pip install selenium
-pip install pandas
-```
+`pip install selenium`
 
 ### Linux
 
@@ -29,8 +26,6 @@ unzip chromedriver_linux64.zip
 sudo mv chromedriver /usr/bin/chromedriver
 sudo chown root:root /usr/bin/chromedriver
 sudo chmod +x /usr/bin/chromedriver
-
-sudo nice -n 19 ionice -c 3 updatedb
 ```
 
 #### Firefox Driver
@@ -40,9 +35,7 @@ sudo nice -n 19 ionice -c 3 updatedb
 sudo apt-get update
 
 wget https://github.com/mozilla/geckodriver/releases/download/v0.27.0/geckodriver-v0.27.0-linux64.tar.gz
-tar -xzf geckodriver-v0.27.0-linux64.tar.gz -C drivers/
-
-sudo nice -n 19 ionice -c 3 updatedb
+tar -xzf geckodriver-v0.26.0-linux64.tar.gz -C drivers/
 ```
 
 -----------
@@ -55,12 +48,6 @@ sudo nice -n 19 ionice -c 3 updatedb
 
 > **Set an environment variable for python virtualenv, `name='bash'` - `value='to_path/bash.exe'`**
 
-```bash
-
-# bash.exe
-
-updatedb
-```
 
 --------
 
@@ -71,20 +58,33 @@ from api.scraper import MediumScraper
 
 medium = MediumScraper(os_type='linux',
                        browser='chrome',
-                       topics='art',  # ['art', 'coronavirus', 'artificial-intelligence'], 'all'
-                       scroll_step=5,
+                       topics=['artificial-intelligence', 'coronavirus'],  # 'coronavirus' or 'all'
+                       scroll_step=1,
+                       time_to_wait=30.0,
                        reload_page_count=5,
                        cfg_filename=None)
 
+# 1.
 medium.init_model(set_quit=False)
 
 print('No. of topics :', len(medium.topics_urls))
 
-medium.run(set_quit=True)
+medium.run(scrape_content=False, set_quit=False)  # scrape_content=True
 
 print('No. of posts :', medium.get_posts_count())
 
-medium.export_posts_urls_json(filename='posts_urls.json', overwrite=False, indent_level=3, sort_keys=False)
-medium.export_posts_urls_csv(filename='posts_urls.csv', overwrite=False)
+# 2.
+url = medium.start_urls['coronavirus']['url'][0]
+
+medium.get_post_content(url)
+medium.quit()
+
+# 3.
+medium.export_metadata_json(filename='posts_urls.json', overwrite=False, indent_level=3, sort_keys=False)
+medium.export_metadata_json(filename='posts_urls.csv', overwrite=False)
+
+medium.export_data_json(filename='posts_content.json', overwrite=False, indent_level=3, sort_keys=False)
+medium.export_data_csv(filename='posts_content.csv', overwrite=False)
+
 
 ```
