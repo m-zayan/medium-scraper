@@ -29,6 +29,8 @@ unzip chromedriver_linux64.zip
 sudo mv chromedriver /usr/bin/chromedriver
 sudo chown root:root /usr/bin/chromedriver
 sudo chmod +x /usr/bin/chromedriver
+
+sudo nice -n 19 ionice -c 3 updatedb
 ```
 
 #### Firefox Driver
@@ -39,6 +41,8 @@ sudo apt-get update
 
 wget https://github.com/mozilla/geckodriver/releases/download/v0.27.0/geckodriver-v0.27.0-linux64.tar.gz
 tar -xzf geckodriver-v0.27.0-linux64.tar.gz -C drivers/
+
+sudo nice -n 19 ionice -c 3 updatedb
 ```
 
 -----------
@@ -51,6 +55,12 @@ tar -xzf geckodriver-v0.27.0-linux64.tar.gz -C drivers/
 
 > **Set an environment variable for python virtualenv, `name='bash'` - `value='to_path/bash.exe'`**
 
+```bash
+
+# bash.exe
+
+updatedb
+```
 
 --------
 
