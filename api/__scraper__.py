@@ -600,15 +600,15 @@ class MediumScraper:
 
             try:
 
-                ok = self.driver.find_elements_by_xpath("//*[contains(text(), '???????????')]")
+                ok = self.driver.find_element_by_xpath("//*[contains(text(), '???????????')]")
 
             except WebDriverException:
-
+                
                 pass
 
             if ok is not None:
 
-                Logger.warning('You have a limited access')
+                Logger.warning('You have a limited access :' + url)
 
                 invalid = input('\tDo you want to continue - [y/n]: ')
 

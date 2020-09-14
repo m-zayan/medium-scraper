@@ -24,8 +24,8 @@ medium.get_post_content(url)
 medium.quit()
 
 # 3.
-medium.export_metadata_json(filename='posts_urls.json', overwrite=False, indent_level=3, sort_keys=False)
-medium.export_metadata_json(filename='posts_urls.csv', overwrite=False)
+medium.export_metadata_json(filename='posts_metadata.json', overwrite=False, indent_level=3, sort_keys=False)
+medium.export_metadata_csv(filename='posts_metadata.csv', overwrite=False)
 
 medium.export_data_json(filename='posts_content.json', overwrite=False, indent_level=3, sort_keys=False)
 medium.export_data_csv(filename='posts_content.csv', overwrite=False)
