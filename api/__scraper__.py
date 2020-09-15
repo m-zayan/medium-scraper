@@ -12,6 +12,8 @@ from errors.exceptions import WebDriverException, ScraperException, TimeoutExcep
 __all__ = ['MediumScraper']
 
 initialization_error_msg = 'Initialization Failed::'
+limited_access_indicator = ['You\'ve read all of your free stories this month.', 'To keep reading this story']
+post_image_indicator = 'Image for post'
 
 
 class MediumScraper:
@@ -251,15 +253,16 @@ class MediumScraper:
 
         while True:
 
+            cur_height = self.driver.execute_script("return document.body.scrollHeight")
+
+            if cur_height > limit:
+
+                break
+
             # scroll to - document.body.scrollHeight
             self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
             Requests.sleep(delay)
-
-            cur_height = self.driver.execute_script("return document.body.scrollHeight")
-
-            if cur_height > limit:
-                break
 
         outputs = callback(**meta)
 
@@ -582,8 +585,6 @@ class MediumScraper:
 
         text_xpath = '//article/div/section/div/div/p'
         figure_xpath = '//article/div/section/div/div/figure'
-        image_xpath = '//div/img'
-        caption_xpath = '//figcaption'
 
         def section_reformat(text):
             return '[' + text + ']'
@@ -591,6 +592,37 @@ class MediumScraper:
         def child_reformat(text):
 
             return '<' + text + '>'
+
+        def get_figure(elements_figure: List[WebElement]):
+
+            img_src, img_caption = [], []
+
+            for element in elements_figure:
+
+                children = element.find_elements_by_xpath('child::*')
+                img_node = self.node_find_element_by_xpath(node=children[0], xpath='.//img', raise_error=False)
+
+                if img_node is None or\
+                        img_node.get_attribute('alt') != post_image_indicator:
+
+                    continue
+
+                elif len(children) == 2:
+
+                    src = img_node.get_attribute('src')
+                    caption = get_caption(children[1])
+
+                    img_src.append(src)
+                    img_caption.append(caption)
+
+                else:
+
+                    src = img_node.get_attribute('src')
+
+                    img_src.append(src)
+                    img_caption.append(None)
+
+            return img_src, img_caption
 
         def get_caption(node: WebElement):
 
@@ -630,19 +662,27 @@ class MediumScraper:
 
             return text
 
+        def check_limited_access():
+
+            ok = self.find_element_by_xpath(f"//*[contains(text(), '{limited_access_indicator[0]}')]",
+                                            raise_error=False)
+
+            if ok is None:
+
+                ok = self.find_element_by_xpath(f"//*[contains(text(), '{limited_access_indicator[1]}')]",
+                                                raise_error=False)
+
+            if ok is None:
+
+                return False
+
+            return True
+
         def get_post_content():
 
-            ok = None
+            ok = check_limited_access()
 
-            try:
-
-                ok = self.driver.find_element_by_xpath("//*[contains(text(), '???????????')]")
-
-            except WebDriverException:
-                
-                pass
-
-            if ok is not None:
+            if ok is True:
 
                 Logger.warning('You have a limited access :' + url)
 
@@ -661,25 +701,9 @@ class MediumScraper:
             elements_text = self.find_elements_by_xpath(xpath=text_xpath, raise_error=False)
             elements_figure = self.find_elements_by_xpath(xpath=figure_xpath, raise_error=False)
 
-            elements_img = list(map(lambda node:
-                                    MediumScraper.node_find_element_by_xpath(node=node,
-                                                                             xpath=image_xpath,
-                                                                             raise_error=False), elements_figure))
-
-            elements_caption = self.find_elements_by_xpath(xpath=caption_xpath, raise_error=False)
-
             text = get_text(elements_text)
 
-            img_url = None
-            img_caption = None
-
-            if len(elements_img):
-
-                img_url = tuple(map(lambda node: node.get_attribute('src'), elements_img))
-
-            if len(elements_caption):
-
-                img_caption = tuple(map(lambda node: get_caption(node), elements_caption))
+            img_src, img_caption = get_figure(elements_figure)
 
             keys = list(self.posts_content.keys())
 
@@ -687,17 +711,15 @@ class MediumScraper:
 
                 self.posts_content = {'url': [],
                                       'text':  [],
-                                      'img_url': [],
+                                      'img_src': [],
                                       'caption': []}
 
             self.posts_content['url'].append(url)
             self.posts_content['text'].append(text)
-            self.posts_content['img_url'].append(img_url)
+            self.posts_content['img_src'].append(img_src)
             self.posts_content['caption'].append(img_caption)
 
-        self.scroll_down(callback=get_post_content,
-                         delay=0.5,
-                         limit=-1)
+        get_post_content()
 
     def __get_taps_urls__(self):
         pass

@@ -164,13 +164,13 @@ class Writer:
     @staticmethod
     def dict_to_json(json_filename, content, overwrite=False, indent_level=3, sort_keys=False, separators=(',', ':')):
 
-        if not OS.file_exists(json_filename) and overwrite:
+        is_file_exist = OS.file_exists(json_filename)
 
-            Logger.error(f'overwrite=True, File: {json_filename} is Not Exists')
+        if not is_file_exist and overwrite:
 
-            return None
+            Logger.warning(f'overwrite=True, File: {json_filename} is Not Exists')
 
-        if OS.file_exists(json_filename) and not overwrite:
+        elif is_file_exist and not overwrite:
 
             Logger.warning(f'File: {json_filename} Already Exists')
 
@@ -186,7 +186,7 @@ class Writer:
 
                 return None
 
-        if not overwrite:
+        if not is_file_exist:
 
             with open(json_filename, 'w+') as buffer_writer:
 
@@ -207,13 +207,13 @@ class Writer:
     @staticmethod
     def dict_to_csv(csv_filename, content, overwrite=False, use_pandas=True):
 
-        if not OS.file_exists(csv_filename) and overwrite:
+        is_file_exist = OS.file_exists(csv_filename)
 
-            Logger.error(f'overwrite=True, File: {csv_filename} is Not Exists')
+        if not is_file_exist and overwrite:
 
-            return None
+            Logger.warning(f'overwrite=True, File: {csv_filename} is Not Exists')
 
-        if OS.file_exists(csv_filename) and not overwrite:
+        elif is_file_exist and not overwrite:
 
             Logger.warning(f'File: {csv_filename} Already Exists')
 
@@ -231,7 +231,7 @@ class Writer:
 
         if not use_pandas:
 
-            if not overwrite:
+            if not is_file_exist:
 
                 with open(csv_filename, 'w+') as buffer_writer:
 
