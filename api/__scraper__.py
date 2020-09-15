@@ -36,7 +36,7 @@ class MediumScraper:
             'linux' or 'windows'
 
         updatedb: str
-            set updatedb=true, if the driver recently installed, or failed to initialize
+            set updatedb=true, if the driver recently installed, or initialization has been failed
                 default, updatedb=False
 
         browser:
