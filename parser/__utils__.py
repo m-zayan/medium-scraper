@@ -151,7 +151,7 @@ class Reader:
     @staticmethod
     def json_to_dict(json_filename):
 
-        if OS.file_exists(json_filename):
+        if not OS.file_exists(json_filename):
 
             Logger.warning(f'File: {json_filename} Doesn\'t Exist')
 

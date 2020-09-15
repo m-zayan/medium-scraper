@@ -28,7 +28,7 @@ class MediumScraper:
 
     def __init__(self, os_type: str, updatedb: bool = False, browser: str = 'chrome', topics: Union[str, list] = None,
                  scroll_step: Union[int, list] = 1, time_to_wait: float = 30.0,
-                 reload_page_count: int = 1, cfg_filename: str = None, **kwargs):
+                 reload_page_count: int = 1, ignore_limited_access=True, cfg_filename: str = None, **kwargs):
         """
         Parameters
         ----------
@@ -75,6 +75,8 @@ class MediumScraper:
 
         self.time_to_wait = time_to_wait
         self.reload_page_count = reload_page_count
+
+        self.ignore_limited_access = ignore_limited_access
 
         self.cfg_filename = cfg_filename
 
@@ -136,6 +138,51 @@ class MediumScraper:
                                          overwrite=export_overwrite)
 
             if scrape_content:
+
+                self.__get_data__()
+
+            if export_data_json:
+
+                self.export_data_json(filename='posts_content.json', overwrite=export_overwrite, indent_level=3,
+                                      sort_keys=False)
+
+            if export_data_csv:
+
+                self.export_data_csv(filename='posts_content.csv', overwrite=export_overwrite)
+
+        except (WebDriverException, ScraperException) as error:
+
+            # Log error
+            Logger.error(error)
+
+            if set_quit:
+
+                self.quit()
+
+        else:
+
+            if set_quit:
+
+                self.quit()
+
+    def scrape_content_from_file(self, metadata_filename='posts_metadata.json',
+                                 export_data_json=True, export_data_csv=True, export_overwrite=True, set_quit=True):
+
+        try:
+
+            _metadata = Reader.json_to_dict(metadata_filename)
+
+            setattr(self, 'metadata', _metadata)
+
+            if not hasattr(self, 'posts_content'):
+
+                setattr(self, 'posts_content', dict())
+
+            n_post = self.get_posts_count()
+
+            Logger.info('No. of posts :', str(n_post))
+
+            if n_post > 0:
 
                 self.__get_data__()
 
@@ -717,7 +764,8 @@ class MediumScraper:
 
             ok = check_limited_access()
 
-            if ok is True:
+            if ok is True and \
+                    self.ignore_limited_access is False:
 
                 Logger.warning('You have a limited access :' + url)
 
@@ -732,6 +780,10 @@ class MediumScraper:
                     Logger.fail('Abort')
 
                     return
+
+            elif ok is True and self.ignore_limited_access:
+
+                Logger.warning('You have a limited access :' + url)
 
             elements_text = self.find_elements_by_xpath(xpath=text_xpath, raise_error=False)
             elements_figure = self.find_elements_by_xpath(xpath=figure_xpath, raise_error=False)
