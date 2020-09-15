@@ -26,7 +26,7 @@ class MediumScraper:
     main_urls = {'root': {'class': None, 'url': 'https://medium.com./'},
                  'topics': {'class': None, 'url': 'https://medium.com./topics'}}
 
-    def __init__(self, os_type: str, browser: str = 'chrome', topics: Union[str, list] = None,
+    def __init__(self, os_type: str, updatedb: bool = False, browser: str = 'chrome', topics: Union[str, list] = None,
                  scroll_step: Union[int, list] = 1, time_to_wait: float = 30.0,
                  reload_page_count: int = 1, cfg_filename: str = None, **kwargs):
         """
@@ -35,20 +35,21 @@ class MediumScraper:
         os_type: str
             'linux' or 'windows'
 
+        updatedb: str
+            set updatedb=true, if the driver recently installed, or failed to initialize
+                default, updatedb=False
+
         browser:
             'chrome' or 'firefox',  default: browser = 'chrome'
 
         topics: Union[str, list]
-
             str: 'all' get all topics, topics names, separated by comma - ',', or list of topics names
 
         scroll_step: Union[int, list]
-
               int: scroll to - scrollHeight * scroll_step
               list: for each topic (i), scroll to - scrollHeight * scroll_step[i]
 
         time_to_wait: float
-
             driver.get(url=...), timeout
 
         reload_page_count: int
@@ -56,7 +57,6 @@ class MediumScraper:
             if timeout --> reload
 
         cfg_filename: str
-
             *.json,  path, which could used to specify scraping settings, ex: to_path/config.json
 
         kwargs:
@@ -64,7 +64,7 @@ class MediumScraper:
         """
 
         self.os_type = os_type
-
+        self.__updatedb__ = updatedb
         self.__os_process__ = OS(os_type=self.os_type)
 
         self.browser = browser.lower()
@@ -401,7 +401,8 @@ class MediumScraper:
 
         if self.browser == 'chrome':
 
-            self.driver_path = self.__os_process__.locate_file(pattern='/chromedriver$', params='-i --regexp')[0]
+            self.driver_path = self.__os_process__.locate_file(pattern='/chromedriver$', params='-i --regexp',
+                                                               updatedb=self.__updatedb__)[0]
 
             if self.driver_path is None:
 
@@ -411,7 +412,8 @@ class MediumScraper:
 
         elif self.browser == 'firefox':
 
-            self.driver_path = self.__os_process__.locate_file(pattern='/geckodriver$', params='-i --regexp')[0]
+            self.driver_path = self.__os_process__.locate_file(pattern='/geckodriver$', params='-i --regexp',
+                                                               updatedb=self.__updatedb__)[0]
 
             if self.driver_path is None:
 

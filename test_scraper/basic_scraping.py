@@ -1,6 +1,7 @@
 from api.scraper import MediumScraper
 
 medium = MediumScraper(os_type='linux',
+                       updatedb=False,
                        browser='chrome',
                        topics=['artificial-intelligence'],  # 'coronavirus' or 'all'
                        scroll_step=1000,
