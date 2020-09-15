@@ -251,16 +251,12 @@ class MediumScraper:
 
     def scroll_down(self, callback, delay=0.5, limit: int = -1, **meta):
 
-        while True:
-
-            cur_height = self.driver.execute_script("return document.body.scrollHeight")
-
-            if cur_height > limit:
-
-                break
+        for i in range(limit):
 
             # scroll to - document.body.scrollHeight
             self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+            Logger.info_r(f'steps : {i+1}/{limit}')
 
             Requests.sleep(delay)
 
@@ -555,7 +551,7 @@ class MediumScraper:
 
         metadata = self.scroll_down(callback=get_metadata,
                                     delay=0.5,
-                                    limit=self.scroll_height * self.scroll_step)
+                                    limit=self.scroll_step)
 
         return metadata
 

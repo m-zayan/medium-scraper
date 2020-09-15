@@ -1,5 +1,6 @@
 from typing import Union
 
+import sys
 import os
 import subprocess as process
 from pathlib import Path
@@ -47,6 +48,12 @@ class Logger:
     def info(message, end='\n', *args):
 
         print(Formatter.GREEN + message + ' ' + ' '.join(args) + Formatter.END, end=end)
+
+    @staticmethod
+    def info_r(message, *args):
+
+        sys.stdout.write('\r ' + Formatter.GREEN + message + ' ' + ' '.join(args) + Formatter.END)
+        sys.stdout.flush()
 
     @staticmethod
     def fail(message, end='\n', *args):
