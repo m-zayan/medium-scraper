@@ -187,18 +187,17 @@ class MediumScraper:
 
                 setattr(self, 'timeout_export', timeout_export)
 
+                setattr(self, 'export_json', export_json)
+                setattr(self, 'export_csv', export_csv)
+
                 self.__get_data__()
 
             if export_json:
-
-                setattr(self, 'export_json', export_json)
 
                 self.export_data_json(filename='posts_content.json', overwrite=export_overwrite, indent_level=3,
                                       sort_keys=False)
 
             if export_csv:
-
-                setattr(self, 'export_csv', export_csv)
 
                 self.export_data_csv(filename='posts_content.csv', overwrite=export_overwrite)
 
