@@ -14,7 +14,8 @@ medium = MediumScraper(os_type='linux',
 medium.init_model(set_quit=False)
 
 medium.scrape_content_from_file(metadata_filename='posts_metadata.json',
-                                export_data_json=True,
-                                export_data_csv=True,
+                                export_json=True,
+                                export_csv=True,
                                 export_overwrite=True,
+                                timeout_export=True,
                                 set_quit=True)

@@ -166,7 +166,8 @@ class MediumScraper:
                 self.quit()
 
     def scrape_content_from_file(self, metadata_filename='posts_metadata.json',
-                                 export_data_json=True, export_data_csv=True, export_overwrite=True, set_quit=True):
+                                 export_json=True, export_csv=True,
+                                 export_overwrite=True, timeout_export=False, set_quit=True):
 
         try:
 
@@ -184,14 +185,20 @@ class MediumScraper:
 
             if n_post > 0:
 
+                setattr(self, 'timeout_export', timeout_export)
+
                 self.__get_data__()
 
-            if export_data_json:
+            if export_json:
+
+                setattr(self, 'export_json', export_json)
 
                 self.export_data_json(filename='posts_content.json', overwrite=export_overwrite, indent_level=3,
                                       sort_keys=False)
 
-            if export_data_csv:
+            if export_csv:
+
+                setattr(self, 'export_csv', export_csv)
 
                 self.export_data_csv(filename='posts_content.csv', overwrite=export_overwrite)
 
@@ -317,7 +324,30 @@ class MediumScraper:
 
                 else:
 
-                    Logger.error(error)
+                    Logger.fail(str(i + 1) + ': timeout::page reload Limit has been exceed\n'
+                                             '\tdo you want to try again - [y/n]: ', end='')
+                    ok = input()
+
+                    Logger.set_line(length=60)
+
+                    if ok.lower() == 'y':
+
+                        self.time_to_wait = float(input('time to wait :'))
+                        self.reload_page_count = int(input('reload count :'))
+
+                        self.get(url)
+
+                    elif ok.lower() == 'n':
+
+                        self.___timeout_export__()
+                        Logger.error(error)
+
+                    else:
+
+                        self.___timeout_export__()
+
+                        Logger.fail('Abort')
+                        Logger.error(error)
 
         self.scroll_height = self.driver.execute_script("return document.body.scrollHeight")
 
@@ -442,6 +472,20 @@ class MediumScraper:
             count += len(self.metadata[key]['url'])
 
         return count
+
+    def ___timeout_export__(self):
+
+        if hasattr(self, 'timeout_export') and self.timeout_export:
+
+            if hasattr(self, 'export_json') and self.export_json:
+
+                self.export_data_json(filename='timeout_export_content.json', overwrite=True,
+                                      indent_level=3,
+                                      sort_keys=False)
+
+            if hasattr(self, 'export_csv') and self.export_csv:
+
+                self.export_data_csv(filename='timeout_export_content.csv', overwrite=True)
 
     def __init_web_driver__(self):
 
