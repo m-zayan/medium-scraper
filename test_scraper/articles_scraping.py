@@ -4,7 +4,7 @@ medium = MediumScraper(os_type='linux',
                        updatedb=False,
                        browser='chrome',
                        topics=['artificial-intelligence'],  # 'coronavirus' or 'all'
-                       scroll_step=1000,
+                       scroll_step=100,
                        time_to_wait=30.0,
                        reload_page_count=5,
                        cfg_filename=None)

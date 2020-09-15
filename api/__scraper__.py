@@ -285,6 +285,7 @@ class MediumScraper:
 
             Requests.sleep(delay)
 
+        Logger.info('', end='\n')
         Logger.set_line(length=50)
 
         outputs = callback(**meta)
