@@ -22,7 +22,7 @@ class MediumScraper:
     browsers = ['chrome', 'firefox']
 
     main_urls = {'root': {'class': None, 'url': 'https://medium.com./'},
-                 'topics': {'class': 'js-sourceStream', 'url': 'https://medium.com./topics'}}
+                 'topics': {'class': None, 'url': 'https://medium.com./topics'}}
 
     def __init__(self, os_type: str, browser: str = 'chrome', topics: Union[str, list] = None,
                  scroll_step: Union[int, list] = 1, time_to_wait: float = 30.0,
@@ -82,7 +82,7 @@ class MediumScraper:
         self.driver: webdriver.Remote
 
         self.topics_urls: list
-        self.start_urls: dict
+        self.metadata: dict
 
         self.posts_content: dict
 
@@ -138,9 +138,9 @@ class MediumScraper:
 
     def export_metadata_json(self, filename='posts_urls.json', overwrite=False, indent_level=3, sort_keys=False):
 
-        if self.start_urls is not None:
+        if self.metadata is not None:
 
-            Writer.dict_to_json(json_filename=filename, content=self.start_urls,
+            Writer.dict_to_json(json_filename=filename, content=self.metadata,
                                 overwrite=overwrite,  indent_level=indent_level, sort_keys=sort_keys)
 
         else:
@@ -154,22 +154,22 @@ class MediumScraper:
 
     def export_metadata_csv(self, filename='posts_urls.csv', overwrite=False):
 
-        if self.start_urls is not None:
+        if self.metadata is not None:
 
-            keys = list(self.start_urls.keys())
+            keys = list(self.metadata.keys())
 
-            metadata = {key: [] for key in self.start_urls[keys[0]].keys()}
+            metadata = {key: [] for key in self.metadata[keys[0]].keys()}
             metadata.setdefault('topic', [])
 
-            for topic in self.start_urls.keys():
+            for topic in self.metadata.keys():
 
-                topic_name = [topic] * len(self.start_urls[topic]['url'])
+                topic_name = [topic] * len(self.metadata[topic]['url'])
 
                 metadata['topic'] += topic_name
 
-                for key in self.start_urls[topic].keys():
+                for key in self.metadata[topic].keys():
 
-                    values = self.start_urls[topic][key]
+                    values = self.metadata[topic][key]
                     metadata[key] += values
 
             Writer.dict_to_csv(csv_filename=filename, content=metadata, overwrite=overwrite, use_pandas=True)
@@ -363,9 +363,9 @@ class MediumScraper:
 
         count = 0
 
-        for key in self.start_urls.keys():
+        for key in self.metadata.keys():
 
-            count += len(self.start_urls[key]['url'])
+            count += len(self.metadata[key]['url'])
 
         return count
 
@@ -467,7 +467,7 @@ class MediumScraper:
         elements = self.find_elements_by_xpath(xpath=topic_xpath)
 
         self.topics_urls = list()
-        self.start_urls = dict()
+        self.metadata = dict()
 
         for element in elements:
 
@@ -485,7 +485,7 @@ class MediumScraper:
                 if (isinstance(self.topics, list) and name in self.topics) \
                         or self.topics == 'all':
 
-                    self.start_urls[name] = self.__get_metadata__(url=topic_url)
+                    self.metadata[name] = self.__get_metadata__(url=topic_url)
 
             for url in self.topics_urls:
 
@@ -500,20 +500,51 @@ class MediumScraper:
         self.get(url)
 
         article_xpath = '//section/div/section/div/div/div/h3/a'
+        subtitle_xpath = '//section/div/section' + '/div' * 4 + '/h3'
+        pub_xpath = '//section/div/section' + '/div' * 5 + '[@class="n"]'
         datetime_xpath = '//section/div/section' + '/div' * 7
+
+        def get_pub(elements_pub: List[WebElement]):
+
+            author, publication = [], []
+
+            for pub in elements_pub:
+
+                children = pub.find_elements_by_xpath('child::*')
+
+                if len(children) == 2:
+
+                    author.append(children[0].text)
+                    publication.append(children[1].text)
+
+                else:
+
+                    author.append(children[0].text)
+                    publication.append(None)
+
+            return author, publication
 
         def get_metadata():
 
             elements_url = self.find_elements_by_xpath(xpath=article_xpath)
+            elements_subtitle = self.find_elements_by_xpath(xpath=subtitle_xpath)
+            elements_pub = self.find_elements_by_xpath(xpath=pub_xpath)
             elements_date = self.find_elements_by_xpath(xpath=datetime_xpath)
 
-            titles = list(map(lambda node: node.text, elements_url))
+            title = list(map(lambda node: node.text, elements_url))
+            subtitle = list(map(lambda node: node.text, elements_subtitle))
             _urls = list(map(lambda node: node.get_attribute('href'), elements_url))
+
+            author, publication = get_pub(elements_pub)
+
             date = list(map(lambda node: node.text.split('\n')[0], elements_date))
             read_time = list(map(lambda node: node.text.split('\n')[-1], elements_date))
 
-            _metadata = {'title': titles,
+            _metadata = {'title': title,
+                         'subtitle': subtitle,
+                         'publication': publication,
                          'url': _urls,
+                         'author': author,
                          'date': date,
                          'read_time': read_time}
 
@@ -527,7 +558,7 @@ class MediumScraper:
 
     def __get_data__(self):
 
-        if self.start_urls is None:
+        if self.metadata is None:
 
             error_log = {'error_type': 'ValueError', 'message': 'Not urls to iterate through'}
             Logger.write_messages_json(error_log)
@@ -539,7 +570,7 @@ class MediumScraper:
 
         self.posts_content = dict()
 
-        for topic, metadata in self.start_urls.items():
+        for topic, metadata in self.metadata.items():
 
             for url in metadata['url']:
 
@@ -549,8 +580,6 @@ class MediumScraper:
 
         self.get(url)
 
-        subtitle_xpath = '//article/div/section/div/div/h2'
-        author_xpath = '//div/div/span/div/span/a'
         text_xpath = '//article/div/section/div/div/p'
         figure_xpath = '//article/div/section/div/div/figure'
         image_xpath = '//div/img'
@@ -590,7 +619,14 @@ class MediumScraper:
                 for child in children:
 
                     txt = MediumScraper.safe_get_attribute(child, 'text', '')
-                    text += child_reformat(txt)
+
+                    if len(txt) > 3:
+
+                        text += child_reformat(txt)
+
+                    else:
+
+                        text += txt
 
             return text
 
@@ -622,9 +658,6 @@ class MediumScraper:
 
                     return
 
-            element_subtitle = self.find_element_by_xpath(xpath=subtitle_xpath, raise_error=False)
-            element_author = self.find_element_by_xpath(xpath=author_xpath, raise_error=False)
-
             elements_text = self.find_elements_by_xpath(xpath=text_xpath, raise_error=False)
             elements_figure = self.find_elements_by_xpath(xpath=figure_xpath, raise_error=False)
 
@@ -634,9 +667,6 @@ class MediumScraper:
                                                                              raise_error=False), elements_figure))
 
             elements_caption = self.find_elements_by_xpath(xpath=caption_xpath, raise_error=False)
-
-            subtitle = MediumScraper.safe_get_attribute(element_subtitle, 'text', '')
-            author = MediumScraper.safe_get_attribute(element_author, 'text', '')
 
             text = get_text(elements_text)
 
@@ -656,15 +686,11 @@ class MediumScraper:
             if len(keys) == 0:
 
                 self.posts_content = {'url': [],
-                                      'subtitle': [],
-                                      'author': [],
                                       'text':  [],
                                       'img_url': [],
                                       'caption': []}
 
             self.posts_content['url'].append(url)
-            self.posts_content['subtitle'].append(subtitle)
-            self.posts_content['author'].append(author)
             self.posts_content['text'].append(text)
             self.posts_content['img_url'].append(img_url)
             self.posts_content['caption'].append(img_caption)

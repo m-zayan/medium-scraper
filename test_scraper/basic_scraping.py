@@ -18,7 +18,7 @@ medium.run(scrape_content=False, set_quit=False)  # scrape_content=True
 print('No. of posts :', medium.get_posts_count())
 
 # 2.
-url = medium.start_urls['coronavirus']['url'][0]
+url = medium.metadata['coronavirus']['url'][0]
 
 medium.get_post_content(url)
 medium.quit()
