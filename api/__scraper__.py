@@ -123,7 +123,7 @@ class MediumScraper:
 
             self.__get_posts_metadata__()
 
-            Logger.info('No. of posts :', self.get_posts_count())
+            Logger.info('No. of posts :', str(self.get_posts_count()))
 
             if export_metadata_json:
 
