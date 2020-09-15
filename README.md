@@ -98,8 +98,8 @@ from api.scraper import MediumScraper
 medium = MediumScraper(os_type='linux',
                        updatedb=False,
                        browser='chrome',
-                       topics=['artificial-intelligence'],  # 'coronavirus' or 'all'
-                       scroll_step=100,
+                       topics=None
+                       scroll_step=1,
                        time_to_wait=30.0,
                        reload_page_count=5,
                        ignore_limited_access=True,
