@@ -98,6 +98,9 @@ class MediumScraper:
 
             self.__init__model__()
 
+            Logger.info('No. of topics :', str(len(self.topics_urls)))
+            Logger.set_line(length=50)
+
         except (WebDriverException, ScraperException) as error:
 
             # Log error
@@ -113,15 +116,37 @@ class MediumScraper:
 
                 self.quit()
 
-    def run(self, scrape_content=False, set_quit=True):
+    def run(self, scrape_content=False, export_metadata_json=True, export_metadata_csv=True,
+            export_data_json=True, export_data_csv=True, export_overwrite=True, set_quit=True):
 
         try:
 
             self.__get_posts_metadata__()
 
+            Logger.info('No. of posts :', self.get_posts_count())
+
+            if export_metadata_json:
+
+                self.export_metadata_json(filename='posts_metadata.json', overwrite=export_overwrite, indent_level=3,
+                                          sort_keys=False)
+
+            if export_metadata_csv:
+
+                self.export_metadata_csv(filename='posts_metadata.csv',
+                                         overwrite=export_overwrite)
+
             if scrape_content:
 
                 self.__get_data__()
+
+            if export_data_json:
+
+                self.export_data_json(filename='posts_content.json', overwrite=export_overwrite, indent_level=3,
+                                      sort_keys=False)
+
+            if export_data_csv:
+
+                self.export_data_csv(filename='posts_content.csv', overwrite=export_overwrite)
 
         except (WebDriverException, ScraperException) as error:
 
@@ -259,6 +284,8 @@ class MediumScraper:
             Logger.info_r(f'steps : {i+1}/{limit}')
 
             Requests.sleep(delay)
+
+        Logger.set_line(length=50)
 
         outputs = callback(**meta)
 
@@ -571,9 +598,18 @@ class MediumScraper:
 
         for topic, metadata in self.metadata.items():
 
-            for url in metadata['url']:
+            n_post = len(metadata['url'])
 
-                self.__get_post_content__(url=url)
+            Logger.info(f'Begin Scraping : {topic}')
+
+            for i in range(n_post):
+
+                Logger.info_r(f'scraped content : {i + 1}/{n_post}')
+
+                self.__get_post_content__(url=metadata['url'][i])
+
+            Logger.info(f'End Scraping : {topic}')
+            Logger.set_line(length=50)
 
     def __get_post_content__(self, url):
 

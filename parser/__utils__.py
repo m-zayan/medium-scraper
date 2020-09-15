@@ -45,7 +45,7 @@ class Logger:
                                 indent_level=indent_level, separators=separators, sort_keys=sort_keys)
 
     @staticmethod
-    def info(message, end='\n', *args):
+    def info(message, *args, end='\n'):
 
         print(Formatter.GREEN + message + ' ' + ' '.join(args) + Formatter.END, end=end)
 
@@ -56,7 +56,7 @@ class Logger:
         sys.stdout.flush()
 
     @staticmethod
-    def fail(message, end='\n', *args):
+    def fail(message, *args, end='\n'):
 
         print(Formatter.FAIL + message + ' ' + ' '.join(args) + Formatter.END, end=end)
 
